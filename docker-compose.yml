@@ -1,0 +1,28 @@
+version: "2"
+services:
+  
+  admin:
+    build: ./admin
+    links:
+      - db
+    ports:
+      - "5000:5000"
+    volumes:
+      - my-datavolume:/var/lib/mysql
+    depends_on:
+      - db
+    command: ["./wait-for-it.sh", "db:3306", "--", "python", "admin.py"]
+
+  db:
+    image: mysql:5.7
+    ports:
+      - "32000:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    restart: always
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/:ro
+      - my-datavolume:/var/run/mysql
+
+volumes:
+  my-datavolume:
