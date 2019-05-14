@@ -7,6 +7,102 @@ global connection
 
 app = Flask(__name__)
 
+@app.route("/adminlogin")
+def login():
+    card_number = request.args.get('cardnumber')
+    pin = request.args.get('pin')
+
+    cursor = connection.cursor(buffered=True)
+    command = 'SELECT * FROM Users where cardnumber = {0} and pin={1}'.format(card_number, pin)
+
+    cursor.execute(command)
+    data = cursor.fetchall()
+    cursor.close()
+
+    if len(data) == 0:
+        return "Fail"
+
+    return "Ok"
+
+@app.route("/adminlistsold")
+def listsold():
+    card_number = request.args.get('cardnumber')
+
+    cursor = connection.cursor(buffered=True)
+    command = 'SELECT * FROM Users where cardnumber = \'{0}\''.format(card_number)
+
+    cursor.execute(command)
+    data = cursor.fetchall()
+    cursor.close()
+
+    for (_, _, _, _, _, a) in data:
+        result = a
+
+    return str(result)
+
+@app.route("/adminwithdrawmoney")
+def withdrawmoney():
+    amount = request.args.get('amount')
+    card_number = request.args.get('cardnumber')
+
+    cursor = connection.cursor(buffered=True)
+    command = 'SELECT * FROM Users where cardnumber = \'{0}\''.format(card_number)
+
+    cursor.execute(command)
+    data = cursor.fetchall()
+
+    for (_, _, _, _, _, a) in data:
+        total = a
+
+    if int(total) < int(amount):
+        return "Fail"
+
+    new_total = int(total) - int(amount)
+    command = 'UPDATE Users SET amount = {0} WHERE cardnumber = \'{1}\''.format(new_total, card_number)
+    cursor.execute(command)
+
+    cursor.close()
+    return "Ok"
+
+@app.route("/admindepositmoney")
+def depositmoney():
+    amount = request.args.get('amount')
+    card_number = request.args.get('cardnumber')
+
+    cursor = connection.cursor(buffered=True)
+    command = 'SELECT * FROM Users where cardnumber = \'{0}\''.format(card_number)
+
+    cursor.execute(command)
+    data = cursor.fetchall()
+
+    for (_, _, _, _, _, a) in data:
+        total = a
+
+    new_total = int(total) + int(amount)
+    command = 'UPDATE Users SET amount = {0} WHERE cardnumber = \'{1}\''.format(new_total, card_number)
+    cursor.execute(command)
+    
+    cursor.close()
+    return "Ok"
+
+@app.route("/adminunlock")
+def unlock():
+    card_number = request.args.get('cardnumber')
+    secret_password = request.args.get('secretpassword')
+
+    cursor = connection.cursor(buffered=True)
+    command = 'SELECT * FROM Users where cardnumber = {0} and secretPassword=\'{1}\''.format(card_number, secret_password)
+
+    cursor.execute(command)
+    data = cursor.fetchall()
+    cursor.close()
+
+    if len(data) == 0:
+        return "Fail"
+
+    return "Ok"
+
+
 def add_clients():
 
     cursor = connection.cursor()
@@ -18,7 +114,7 @@ def add_clients():
     cursor.close()
 
 @app.route('/History')
-def Flights():
+def History():
     
     global connection
     cursor = connection.cursor()
@@ -31,7 +127,7 @@ def Flights():
     return json.dumps(data, indent = 4)
 
 @app.route('/Users')
-def Tickets():
+def Users():
     
     global connection
     cursor = connection.cursor()
@@ -57,7 +153,6 @@ if __name__ == '__main__':
     connection = mysql.connector.connect(**config)
     cursor = connection.cursor()
 
-    print("Here")
     cursor.execute('DELETE FROM Users')
     cursor.execute('DELETE FROM History')
 
